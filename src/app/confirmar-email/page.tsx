@@ -1,0 +1,1 @@
+export default function ConfirmarEmailPage(){return <main className="card"><h1>Confirmar e-mail</h1><p>Verifique sua caixa de entrada e confirme o endereço usado no cadastro.</p><a href="/login">Voltar para entrar</a></main>}
