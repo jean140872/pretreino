@@ -57,7 +57,7 @@ export default function DashboardPage() {
         <Link className="module-card" href="/perfil-fitness"><span>01</span><h2>Perfil Fitness</h2><p>Dados físicos, objetivo e ponto de partida.</p></Link>
         <Link className="module-card" href="/evolucao"><span>02</span><h2>Evolução</h2><p>Histórico de medições e acompanhamento da tendência.</p></Link>
         <Link className="module-card" href="/treino"><span>03</span><h2>Meu treino</h2><p>{data?.hasPlan ? 'Treino personalizado ligado ao seu plano activo.' : 'Consulte o treino e acompanhe as suas sessões.'}</p></Link>
-        <div className="module-card disabled"><span>04</span><h2>Alimentação</h2><p>Módulo reservado para a próxima etapa funcional do projecto.</p></div>
+        <Link className="module-card" href="/nutricao"><span>04</span><h2>Alimentação</h2><p>Plano alimentar, metas nutricionais e refeições personalizadas.</p></Link>
       </section>
     </main>
   )
