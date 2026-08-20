@@ -26,7 +26,7 @@ export default function Home() {
             </p>
 
             <div className="hero-buttons">
-              <a href="/login" className="cta cta-primary">
+              <a href="/cadastro" className="cta cta-primary">
                 <span>♙</span> Entrar na plataforma <strong>→</strong>
               </a>
               <a href="/cadastro" className="cta cta-secondary">
