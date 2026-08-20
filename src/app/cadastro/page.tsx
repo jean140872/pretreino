@@ -66,7 +66,10 @@ export default function CadastroPage() {
           <div className="protection"><div className="shield">✓</div><div><strong>Seus dados estão protegidos</strong><small>Utilizamos criptografia e seguimos os mais altos padrões de segurança.</small></div></div>
         </div>
 
-        <div className="athlete-art" style={{ left: '27%', width: '500px', opacity: 0.5 }}><img src="/pretreino-athlete.svg" alt="Atleta masculino e atleta feminina em segundo plano" /></div>
+        <div className="athlete-art" aria-hidden="true">
+          <img className="athlete-photo athlete-photo-male" src="https://images.pexels.com/photos/8875081/pexels-photo-8875081.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="" loading="eager" referrerPolicy="no-referrer" />
+          <img className="athlete-photo athlete-photo-female" src="https://images.pexels.com/photos/944637/pexels-photo-944637.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="" loading="eager" referrerPolicy="no-referrer" />
+        </div>
 
         <div className="signup-card">
           <div className="signup-card-head"><div className="user-badge">♙</div><div><h2>Criar minha conta</h2><p>Preencha os dados abaixo para começar</p></div></div>
