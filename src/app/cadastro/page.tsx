@@ -27,14 +27,11 @@ export default function CadastroPage() {
   const strengthLabel = ['Muito fraca', 'Fraca', 'Boa', 'Forte', 'Muito forte'][strength]
 
   async function submit(e: FormEvent) {
-    e.preventDefault()
-    setError('')
-    setMessage('')
+    e.preventDefault(); setError(''); setMessage('')
     if (password !== confirm) return setError('As palavras-passe não coincidem.')
     if (!terms) return setError('Aceite os Termos de Uso e a Política de Privacidade para continuar.')
     const { error } = await createClient().auth.signUp({ email, password, options: { data: { full_name: name } } })
-    if (error) setError(error.message)
-    else setMessage('Cadastro enviado. Verifique o seu e-mail para confirmar a conta.')
+    if (error) setError(error.message); else setMessage('Cadastro enviado. Verifique o seu e-mail para confirmar a conta.')
   }
 
   async function oauth(provider: 'google' | 'apple') {
@@ -64,11 +61,12 @@ export default function CadastroPage() {
           </div>
 
           <div className="protection"><div className="shield">✓</div><div><strong>Seus dados estão protegidos</strong><small>Utilizamos criptografia e seguimos os mais altos padrões de segurança.</small></div></div>
+          <div className="signup-footer">© 2026 PRETREINO. Todos os direitos reservados.</div>
         </div>
 
-        <div className="athlete-art" aria-hidden="true" style={{ position: 'absolute', left: '2%', bottom: 0, width: '590px', height: '94%', opacity: 1, zIndex: 1, pointerEvents: 'none', display: 'block' }}>
-          <img className="athlete-photo athlete-photo-male" src="https://images.pexels.com/photos/8875081/pexels-photo-8875081.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="" loading="eager" referrerPolicy="no-referrer" style={{ position: 'absolute', left: '10px', bottom: 0, width: '260px', height: '560px', objectFit: 'cover', objectPosition: 'center top', opacity: 0.42, borderRadius: '24px', mixBlendMode: 'screen', filter: 'saturate(.9) contrast(1.12)' }} />
-          <img className="athlete-photo athlete-photo-female" src="https://images.pexels.com/photos/944637/pexels-photo-944637.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="" loading="eager" referrerPolicy="no-referrer" style={{ position: 'absolute', left: '245px', bottom: 0, width: '260px', height: '560px', objectFit: 'cover', objectPosition: 'center top', opacity: 0.42, borderRadius: '24px', mixBlendMode: 'screen', filter: 'saturate(.9) contrast(1.12)' }} />
+        <div className="athlete-art" aria-hidden="true">
+          <div className="athlete-photo-wrap athlete-male"><img className="athlete-photo" src="https://images.pexels.com/photos/8874401/pexels-photo-8874401.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="" loading="eager" referrerPolicy="no-referrer" /></div>
+          <div className="athlete-photo-wrap athlete-female"><img className="athlete-photo" src="https://images.pexels.com/photos/944637/pexels-photo-944637.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="" loading="eager" referrerPolicy="no-referrer" /></div>
         </div>
 
         <div className="signup-card">
