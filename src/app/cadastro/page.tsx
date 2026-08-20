@@ -66,9 +66,9 @@ export default function CadastroPage() {
           <div className="protection"><div className="shield">✓</div><div><strong>Seus dados estão protegidos</strong><small>Utilizamos criptografia e seguimos os mais altos padrões de segurança.</small></div></div>
         </div>
 
-        <div className="athlete-art" aria-hidden="true">
-          <img className="athlete-photo athlete-photo-male" src="https://images.pexels.com/photos/8875081/pexels-photo-8875081.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="" loading="eager" referrerPolicy="no-referrer" />
-          <img className="athlete-photo athlete-photo-female" src="https://images.pexels.com/photos/944637/pexels-photo-944637.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="" loading="eager" referrerPolicy="no-referrer" />
+        <div className="athlete-art" aria-hidden="true" style={{ position: 'absolute', left: '2%', bottom: 0, width: '590px', height: '94%', opacity: 1, zIndex: 1, pointerEvents: 'none', display: 'block' }}>
+          <img className="athlete-photo athlete-photo-male" src="https://images.pexels.com/photos/8875081/pexels-photo-8875081.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="" loading="eager" referrerPolicy="no-referrer" style={{ position: 'absolute', left: '10px', bottom: 0, width: '260px', height: '560px', objectFit: 'cover', objectPosition: 'center top', opacity: 0.42, borderRadius: '24px', mixBlendMode: 'screen', filter: 'saturate(.9) contrast(1.12)' }} />
+          <img className="athlete-photo athlete-photo-female" src="https://images.pexels.com/photos/944637/pexels-photo-944637.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="" loading="eager" referrerPolicy="no-referrer" style={{ position: 'absolute', left: '245px', bottom: 0, width: '260px', height: '560px', objectFit: 'cover', objectPosition: 'center top', opacity: 0.42, borderRadius: '24px', mixBlendMode: 'screen', filter: 'saturate(.9) contrast(1.12)' }} />
         </div>
 
         <div className="signup-card">
