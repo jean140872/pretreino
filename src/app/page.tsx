@@ -8,7 +8,7 @@ export default function Home() {
           <span className="brand-mark">P</span>
           <span>PRETREINO</span>
         </div>
-        <a href="/login" className="header-login">Entrar na plataforma</a>
+        <a href="/cadastro" className="header-login">Entrar na plataforma</a>
       </header>
 
       <div className="landing-container">
