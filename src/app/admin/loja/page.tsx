@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
@@ -27,7 +27,7 @@ export default function AdminLojaPage() {
 
   useEffect(() => { load() }, [])
 
-  const save = async (e: React.FormEvent) => {
+  const save = async (e: FormEvent) => {
     e.preventDefault(); setMessage('')
     const supabase = createClient()
     const payload = { name: form.name.trim(), description: form.description.trim() || null, category: form.category.trim() || null, price: form.price === '' ? null : Number(form.price), currency: 'BRL', image_url: form.image_url.trim() || null, external_url: form.external_url.trim() || null, affiliate_url: form.affiliate_url.trim() || null, active: form.active }
@@ -37,7 +37,7 @@ export default function AdminLojaPage() {
     setForm(blank); setEditing(null); await load()
   }
 
-  const edit = (p: Product) => setEditing(p.id) || setForm({ name: p.name, description: p.description || '', category: p.category || 'Suplementos', price: p.price == null ? '' : String(p.price), image_url: p.image_url || '', external_url: p.external_url || '', affiliate_url: p.affiliate_url || '', active: p.active })
+  const edit = (p: Product) => { setEditing(p.id); setForm({ name: p.name, description: p.description || '', category: p.category || 'Suplementos', price: p.price == null ? '' : String(p.price), image_url: p.image_url || '', external_url: p.external_url || '', affiliate_url: p.affiliate_url || '', active: p.active }) }
   const remove = async (id: string) => { const supabase = createClient(); await supabase.from('store_products').delete().eq('id', id); await load() }
 
   if (allowed === null) return <main className="admin-page"><div className="loading">A verificar acesso administrativo...</div><style jsx>{`.admin-page{min-height:100vh;background:#070810;color:#fff;display:grid;place-items:center;font-family:Arial}.loading{color:#9296a8}`}</style></main>
