@@ -73,42 +73,34 @@ Foi feita uma revisão da árvore de `src/app` e dos destinos internos. A análi
 
 Em vez de substituir a lógica funcional dessas páginas, foi criado um sistema visual comum em `src/app/premium-pages.css` e importado no `src/app/layout.tsx`. Isso preserva a lógica, dados e fluxos existentes enquanto transforma os destinos genéricos num padrão premium.
 
-O sistema inclui:
+## Loja e monetização
 
-- fundo escuro com iluminação radial;
-- tipografia e hierarquia premium;
-- gradientes PRETREINO roxo/azul;
-- cartões escuros com bordas subtis;
-- sombras e efeitos de profundidade;
-- botões premium;
-- inputs premium;
-- estados de erro/sucesso premium;
-- cabeçalhos e navegação premium;
-- responsividade mobile;
-- página premium para recuperação/redefinição de senha.
+A Loja possui uma página premium e uma página dedicada `/produtos-suplementos` alimentada por `store_products`. Produtos publicados pelo painel administrativo aparecem automaticamente; cliques são registados em `store_clicks`. O painel `/admin/loja` permite cadastrar, editar, publicar/ocultar e definir preço, imagem e links externos/afiliados.
 
-A varredura não altera o sistema visual próprio já aprovado da Home, Dashboard, Login, Cadastro e Confirmar Email.
+Os preços aprovados para a estrutura de assinatura são:
+- Free: R$ 0.
+- Pro: R$ 39,90/mês ou R$ 299,90/ano.
+- Premium: R$ 59,90/mês ou R$ 449,90/ano.
 
-## Commits da varredura premium
+A tabela `premium_plans` foi populada com PRETREINO Pro (R$ 39,90/mês) e PRETREINO Premium (R$ 59,90/mês), e a página `/premium` passou a ler esses planos dinamicamente. O checkout externo ainda não deve ser apresentado como pagamento concluído; a ligação a um provedor de pagamentos real é uma etapa própria de integração comercial.
 
-- `38d69b6ce9426a26bd16f9cecd4e0eced0ae9009` — criação do sistema `premium-pages.css`.
-- `ad6152259260f38cea511ae4783f260bbb9c72c3` — carregamento do sistema premium no layout global.
+## Continuação implementada
 
-A alteração deve ser validada no deployment antes de considerar a etapa concluída.
+A análise profunda do projecto identificou que o banco já tinha núcleos para IA, comunidade, profissionais, academias e métricas, mas faltavam superfícies premium correspondentes. Foram adicionadas:
 
-## Loja
+- `/ia` — espaço premium para conversas persistidas em `ai_conversations`.
+- `/comunidade` — feed premium e publicação em `community_posts`.
+- `/profissionais` — directório premium ligado a `professionals`.
+- `/academias` — directório premium ligado a `gyms`.
+- `/admin` — centro premium de métricas ligado à view `admin_platform_metrics`.
 
-A Loja já recebeu uma página premium com:
+As páginas novas não redesenham Home, Login, Cadastro, Confirmar Email ou Dashboard aprovadas.
 
-- cabeçalho PRETREINO;
-- retorno para Dashboard;
-- hero de Loja;
-- cards para plano personalizado, experiência alimentar e PRETREINO+;
-- CTA de exploração;
-- tratamento visual premium;
-- responsividade.
+## Segurança e performance
 
-Os itens de compra reais devem ser ligados às funcionalidades comerciais quando forem implementados; não apresentar compra fictícia como se estivesse activa.
+Foi aplicada a migration `20260821_security_and_fk_index_hardening` para restringir execução de funções SECURITY DEFINER que não precisam ser chamadas pelo cliente e para adicionar índices de cobertura às foreign keys sinalizadas pelo Database Advisor. A segurança continua com RLS activo nas tabelas públicas.
+
+O Advisor também sinaliza optimizações de RLS (`(select auth.uid())`), políticas permissivas duplicadas e protecção contra passwords comprometidas. A protecção de passwords vazadas depende da configuração Auth do projecto e não foi simulada no código.
 
 ## Princípios de alteração
 
