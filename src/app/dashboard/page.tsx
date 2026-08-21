@@ -40,24 +40,58 @@ export default function DashboardPage() {
 
   async function logout() { await createClient().auth.signOut(); window.location.href = '/login' }
 
-  if (loading) return <main className="page-shell"><p className="muted">Carregando seu dashboard...</p></main>
+  if (loading) return <main className="dashboard-app"><div className="dashboard-loading">Carregando seu espaço PRETREINO...</div></main>
+
+  const firstName = data?.name?.trim().split(/\s+/)[0]
+  const variationLabel = data?.weightDelta == null ? 'Sem histórico suficiente' : `${data.weightDelta > 0 ? '+' : ''}${data.weightDelta.toFixed(1)} kg desde a primeira medição`
 
   return (
-    <main className="page-shell">
-      <header className="topbar"><span className="brand">PRETREINO</span><button className="link-button" onClick={logout}>Sair</button></header>
-      <section className="dashboard-hero"><div className="eyebrow">DASHBOARD</div><h1>{data?.name ? `Olá, ${data.name}` : 'Olá'}</h1><p className="muted">Aqui começa o acompanhamento real da sua evolução.</p>{data?.email && <p className="muted small">{data.email}</p>}</section>
-      {error && <p className="notice error-notice">{error}</p>}
-      <section className="stats-grid">
-        <div className="stat-card"><span>Medições</span><strong>{data?.measurementCount ?? 0}</strong></div>
-        <div className="stat-card"><span>Peso atual</span><strong>{data?.currentWeight != null ? `${data.currentWeight} kg` : '—'}</strong></div>
-        <div className="stat-card"><span>Variação</span><strong>{data?.weightDelta == null ? '—' : `${data.weightDelta > 0 ? '+' : ''}${data.weightDelta.toFixed(1)} kg`}</strong></div>
-        <div className="stat-card"><span>Exercícios no plano</span><strong>{data?.workoutCount ?? 0}</strong></div>
-      </section>
-      <section className="dashboard-grid">
-        <Link className="module-card" href="/perfil-fitness"><span>01</span><h2>Perfil Fitness</h2><p>Dados físicos, objetivo e ponto de partida.</p></Link>
-        <Link className="module-card" href="/evolucao"><span>02</span><h2>Evolução</h2><p>Histórico de medições e acompanhamento da tendência.</p></Link>
-        <Link className="module-card" href="/treino"><span>03</span><h2>Meu treino</h2><p>{data?.hasPlan ? 'Treino personalizado ligado ao seu plano activo.' : 'Consulte o treino e acompanhe as suas sessões.'}</p></Link>
-        <Link className="module-card" href="/nutricao"><span>04</span><h2>Alimentação</h2><p>Plano alimentar, metas nutricionais e refeições personalizadas.</p></Link>
+    <main className="dashboard-app">
+      <aside className="dashboard-sidebar">
+        <div className="dashboard-brand"><span className="dashboard-brand-mark">P</span><span>PRETREINO</span></div>
+        <div className="dashboard-nav-label">SEU ESPAÇO</div>
+        <nav className="dashboard-nav">
+          <Link className="dashboard-nav-item active" href="/dashboard"><span>⌂</span> Visão geral</Link>
+          <Link className="dashboard-nav-item" href="/treino"><span>↗</span> Meu treino</Link>
+          <Link className="dashboard-nav-item" href="/nutricao"><span>◈</span> Alimentação</Link>
+          <Link className="dashboard-nav-item" href="/evolucao"><span>⌁</span> Evolução</Link>
+          <Link className="dashboard-nav-item" href="/perfil-fitness"><span>◎</span> Perfil fitness</Link>
+        </nav>
+        <div className="dashboard-sidebar-bottom">
+          <div className="dashboard-mini-card"><span className="dashboard-mini-icon">✦</span><div><strong>Seu próximo passo</strong><small>{data?.hasPlan ? 'Continue seu treino hoje.' : 'Complete seu perfil para começar.'}</small></div></div>
+          <button className="dashboard-logout" onClick={logout}>Sair da conta</button>
+        </div>
+      </aside>
+
+      <section className="dashboard-main">
+        <header className="dashboard-topbar">
+          <div><span className="dashboard-top-eyebrow">PRETREINO / VISÃO GERAL</span><span className="dashboard-status"><i /> Sistema online</span></div>
+          <div className="dashboard-user"><div className="dashboard-avatar">{firstName?.charAt(0)?.toUpperCase() || 'P'}</div><div><strong>{data?.name || 'Seu perfil'}</strong><small>{data?.email || 'Conta PRETREINO'}</small></div></div>
+        </header>
+
+        <div className="dashboard-content">
+          <section className="dashboard-welcome">
+            <div><span className="dashboard-eyebrow">SEU PROGRESSO COMEÇA AQUI</span><h1>{firstName ? `Olá, ${firstName}.` : 'Olá.'}<br /><em>Vamos evoluir.</em></h1><p>Acompanhe seus treinos, alimentação e evolução em um único lugar.</p></div>
+            <Link className="dashboard-primary-action" href={data?.hasPlan ? '/treino' : '/perfil-fitness'}>{data?.hasPlan ? 'Começar meu treino' : 'Completar meu perfil'} <span>→</span></Link>
+          </section>
+
+          {error && <p className="notice error-notice">{error}</p>}
+
+          <section className="dashboard-section-head"><div><span className="dashboard-eyebrow">SEUS NÚMEROS</span><h2>Visão do seu momento</h2></div><Link href="/evolucao">Ver evolução completa →</Link></section>
+          <section className="premium-stats-grid">
+            <div className="premium-stat-card featured"><span className="stat-icon">◉</span><small>PESO ATUAL</small><strong>{data?.currentWeight != null ? `${data.currentWeight}` : '—'}<b>{data?.currentWeight != null ? ' kg' : ''}</b></strong><p>{variationLabel}</p></div>
+            <div className="premium-stat-card"><span className="stat-icon">⌁</span><small>MEDIÇÕES</small><strong>{data?.measurementCount ?? 0}</strong><p>Registos de evolução</p></div>
+            <div className="premium-stat-card"><span className="stat-icon">↗</span><small>EXERCÍCIOS NO PLANO</small><strong>{data?.workoutCount ?? 0}</strong><p>{data?.hasPlan ? 'Disponíveis no seu plano' : 'Nenhum plano activo ainda'}</p></div>
+          </section>
+
+          <section className="dashboard-section-head modules-head"><div><span className="dashboard-eyebrow">PRETREINO</span><h2>Seu centro de performance</h2></div></section>
+          <section className="premium-module-grid">
+            <Link className="premium-module-card training" href="/treino"><div className="module-card-top"><span className="module-number">01</span><span className="module-arrow">↗</span></div><div className="module-symbol">✦</div><h3>Meu treino</h3><p>{data?.hasPlan ? 'Seu plano personalizado está pronto para você.' : 'Monte seu ponto de partida e acompanhe suas sessões.'}</p><span className="module-link">Abrir treino →</span></Link>
+            <Link className="premium-module-card nutrition" href="/nutricao"><div className="module-card-top"><span className="module-number">02</span><span className="module-arrow">↗</span></div><div className="module-symbol">◈</div><h3>Alimentação</h3><p>Organize suas metas nutricionais e refeições para potencializar seus resultados.</p><span className="module-link">Abrir alimentação →</span></Link>
+            <Link className="premium-module-card evolution" href="/evolucao"><div className="module-card-top"><span className="module-number">03</span><span className="module-arrow">↗</span></div><div className="module-symbol">⌁</div><h3>Evolução</h3><p>Veja seu histórico, tendências e o resultado do trabalho que você está construindo.</p><span className="module-link">Acompanhar evolução →</span></Link>
+            <Link className="premium-module-card profile" href="/perfil-fitness"><div className="module-card-top"><span className="module-number">04</span><span className="module-arrow">↗</span></div><div className="module-symbol">◎</div><h3>Perfil fitness</h3><p>Mantenha seus dados, objetivo e ponto de partida sempre actualizados.</p><span className="module-link">Ver meu perfil →</span></Link>
+          </section>
+        </div>
       </section>
     </main>
   )
