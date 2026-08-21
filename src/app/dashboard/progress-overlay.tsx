@@ -41,12 +41,22 @@ export default function ProgressOverlay() {
   if (!progress) return null
 
   return <div className={`progress-overlay ${open ? 'is-open' : 'is-closed'}`}>
-    <button className="progress-toggle" onClick={() => setOpen(!open)} aria-label="Mostrar progresso">{open ? '×' : `${progress.percent}%`}</button>
     {open && <div className="progress-panel">
+      <button className="progress-toggle" onClick={() => setOpen(false)} aria-label="Fechar lembrete de progresso">×</button>
       <div className="progress-panel-top"><span>SEU PROGRESSO</span><strong>{progress.percent}%</strong></div>
       <div className="progress-bar"><i style={{ width: `${progress.percent}%` }} /></div>
       <div className="progress-copy"><div><b>{progress.detail}</b><small>Próximo marco: {progress.next}</small></div><span>✦</span></div>
     </div>}
-    <style jsx>{`.progress-overlay{position:fixed;right:30px;top:96px;z-index:30}.progress-panel{width:330px;padding:18px 18px 16px;border:1px solid rgba(192,132,252,.22);border-radius:17px;background:linear-gradient(145deg,rgba(20,16,38,.97),rgba(9,11,20,.97));box-shadow:0 22px 70px rgba(0,0,0,.4),0 0 45px rgba(124,58,237,.1);backdrop-filter:blur(18px)}.progress-panel-top{display:flex;align-items:center;justify-content:space-between}.progress-panel-top span{font-size:9px;letter-spacing:.16em;color:#8d91a3;font-weight:900}.progress-panel-top strong{font-size:22px;background:linear-gradient(90deg,#d8b4fe,#60a5fa);-webkit-background-clip:text;color:transparent}.progress-bar{height:7px;border-radius:99px;background:rgba(255,255,255,.08);margin:12px 0 13px;overflow:hidden}.progress-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7c3aed,#60a5fa);box-shadow:0 0 16px rgba(124,58,237,.65)}.progress-copy{display:flex;justify-content:space-between;gap:14px}.progress-copy b{display:block;color:#fff;font-size:11px;line-height:1.35}.progress-copy small{display:block;color:#777b8e;font-size:9px;margin-top:5px}.progress-copy>span{color:#c084fc;font-size:20px}.progress-toggle{position:absolute;right:-10px;top:-10px;width:25px;height:25px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:#151522;color:#a5a8b6;cursor:pointer}.is-closed .progress-toggle{position:static;width:auto;height:auto;min-width:48px;padding:8px 11px;border-radius:12px;color:#fff;font-size:11px;font-weight:900;background:linear-gradient(90deg,#6d28d9,#4338ca);box-shadow:0 10px 30px rgba(67,56,202,.3)}@media(max-width:700px){.progress-overlay{right:14px;left:14px;top:88px}.progress-panel{width:100%}}`}</style>
+    {!open && <button className="progress-restore" onClick={() => setOpen(true)} aria-label="Mostrar lembrete de progresso">{progress.percent}%</button>}
+    <style jsx>{`
+      .progress-overlay{position:absolute;right:30px;top:166px;z-index:6;pointer-events:none}
+      .progress-panel{position:relative;width:330px;padding:18px 18px 16px;border:1px solid rgba(192,132,252,.3);border-radius:17px;background:linear-gradient(145deg,rgba(20,16,38,.98),rgba(9,11,20,.98));box-shadow:0 22px 70px rgba(0,0,0,.4),0 0 45px rgba(124,58,237,.12);backdrop-filter:blur(18px);pointer-events:auto}
+      .progress-panel-top{display:flex;align-items:center;justify-content:space-between}.progress-panel-top span{font-size:9px;letter-spacing:.16em;color:#8d91a3;font-weight:900}.progress-panel-top strong{font-size:22px;background:linear-gradient(90deg,#d8b4fe,#60a5fa);-webkit-background-clip:text;color:transparent}
+      .progress-bar{height:7px;border-radius:99px;background:rgba(255,255,255,.08);margin:12px 0 13px;overflow:hidden}.progress-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7c3aed,#60a5fa);box-shadow:0 0 16px rgba(124,58,237,.65)}
+      .progress-copy{display:flex;justify-content:space-between;gap:14px}.progress-copy b{display:block;color:#fff;font-size:11px;line-height:1.35}.progress-copy small{display:block;color:#777b8e;font-size:9px;margin-top:5px}.progress-copy>span{color:#c084fc;font-size:20px}
+      .progress-toggle{position:absolute;right:-10px;top:-10px;width:25px;height:25px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:#151522;color:#a5a8b6;cursor:pointer;font-size:16px;line-height:1;pointer-events:auto}.progress-restore{min-width:52px;padding:9px 11px;border-radius:12px;border:1px solid rgba(192,132,252,.24);color:#fff;font-size:11px;font-weight:900;background:linear-gradient(90deg,#6d28d9,#4338ca);box-shadow:0 10px 30px rgba(67,56,202,.3);cursor:pointer;pointer-events:auto}
+      @media(max-width:1100px){.progress-overlay{right:22px}}
+      @media(max-width:700px){.progress-overlay{position:fixed;right:14px;left:14px;top:96px}.progress-panel{width:100%;box-sizing:border-box}}
+    `}</style>
   </div>
 }
