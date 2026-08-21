@@ -40,12 +40,12 @@ Quando o utilizador aprovar uma página, layout, fluxo ou decisão, essa parte f
 ## Fluxos já testados / problemas encontrados
 
 - Botões da Home para entrar/cadastrar devem seguir os caminhos aprovados.
-- A página antiga `/login` simples em HTML foi considerada inadequada e não deve ser usada como destino visual dos botões aprovados.
+- A página antiga `/login` simples em HTML foi considerada inadequada e não deve ser usada como destino visual dos botões aprovados. A versão actual de Login é premium.
 - O cadastro deve criar a conta e conduzir ao fluxo de confirmação de e-mail quando a configuração exigir confirmação.
-- A confirmação de e-mail também precisa ter apresentação premium, não a página HTML simples anterior.
+- A confirmação de e-mail tem apresentação premium.
 - Depois de autenticar, o utilizador entra na Dashboard.
 - A Dashboard foi testada com utilizador real e aprovada como base visual.
-- Foram encontrados destinos internos demasiado simples; devem receber tratamento premium sem alterar as páginas já aprovadas.
+- Foram encontrados destinos internos demasiado simples; foi feita uma varredura e esses destinos receberam um sistema visual premium comum.
 
 ## Dashboard — requisitos de produto
 
@@ -60,16 +60,41 @@ A Dashboard não deve mostrar apenas treino, alimentação, evolução e perfil.
 
 O objectivo é permitir que um utilizador curioso experimente rapidamente as partes do produto e também encontre as áreas comerciais sem procurar demasiado.
 
-## Alteração técnica mais recente
+## Varredura premium — alteração mais recente
 
-Commit: `c6e92cb002f43015c1bfa2369a38bba302189783`
-Mensagem: `fix: mark store page as client component`
+Foi feita uma revisão da árvore de `src/app` e dos destinos internos. A análise identificou páginas genéricas que ainda usavam o sistema frio/branco antigo, incluindo:
 
-Foi corrigida a página da Loja para funcionar como Client Component e foi feito novo deployment no Render.
+- `/treino`
+- `/nutricao`
+- `/evolucao`
+- `/perfil-fitness`
+- `/recuperar-senha`
+- `/redefinir-senha`
 
-Deployment final: `dep-da3rb567bikc73d64cjg` — status `live`.
+Em vez de substituir a lógica funcional dessas páginas, foi criado um sistema visual comum em `src/app/premium-pages.css` e importado no `src/app/layout.tsx`. Isso preserva a lógica, dados e fluxos existentes enquanto transforma os destinos genéricos num padrão premium.
 
-Antes dele, o commit `7e9cfd6a68b3d591c1b46ec45604f7278a28c38b` teve build failure; o problema foi corrigido antes do deployment live seguinte.
+O sistema inclui:
+
+- fundo escuro com iluminação radial;
+- tipografia e hierarquia premium;
+- gradientes PRETREINO roxo/azul;
+- cartões escuros com bordas subtis;
+- sombras e efeitos de profundidade;
+- botões premium;
+- inputs premium;
+- estados de erro/sucesso premium;
+- cabeçalhos e navegação premium;
+- responsividade mobile;
+- página premium para recuperação/redefinição de senha.
+
+A varredura não altera o sistema visual próprio já aprovado da Home, Dashboard, Login, Cadastro e Confirmar Email.
+
+## Commits da varredura premium
+
+- `38d69b6ce9426a26bd16f9cecd4e0eced0ae9009` — criação do sistema `premium-pages.css`.
+- `ad6152259260f38cea511ae4783f260bbb9c72c3` — carregamento do sistema premium no layout global.
+
+A alteração deve ser validada no deployment antes de considerar a etapa concluída.
 
 ## Loja
 
@@ -95,6 +120,7 @@ Os itens de compra reais devem ser ligados às funcionalidades comerciais quando
 6. Preservar o escopo comercial completo.
 7. Priorizar experiência premium e caminhos de monetização claros.
 8. Testar como utilizador final, seguindo os links e botões da plataforma.
+9. Quando for pedido que todas as páginas sejam premium, aplicar o padrão aos destinos frios sem destruir a lógica ou as páginas explicitamente aprovadas.
 
 ## Infraestrutura conhecida
 
@@ -111,6 +137,7 @@ Os itens de compra reais devem ser ligados às funcionalidades comerciais quando
 - Imagens no cadastro foram testadas; a decisão final foi deixar o fundo sem foto.
 - O utilizador explicitou várias vezes que alterações devem ser cirúrgicas e apenas no ponto solicitado.
 - O utilizador quer continuar o desenvolvimento por etapas e testar cada fluxo como utilizador real.
+- O comando de continuidade do projecto é `PRE TREINO`.
 
 ## Fonte de verdade
 
