@@ -60,16 +60,9 @@ A Dashboard não deve mostrar apenas treino, alimentação, evolução e perfil.
 
 O objectivo é permitir que um utilizador curioso experimente rapidamente as partes do produto e também encontre as áreas comerciais sem procurar demasiado.
 
-## Varredura premium — alteração mais recente
+## Varredura premium
 
-Foi feita uma revisão da árvore de `src/app` e dos destinos internos. A análise identificou páginas genéricas que ainda usavam o sistema frio/branco antigo, incluindo:
-
-- `/treino`
-- `/nutricao`
-- `/evolucao`
-- `/perfil-fitness`
-- `/recuperar-senha`
-- `/redefinir-senha`
+Foi feita uma revisão da árvore de `src/app` e dos destinos internos. A análise identificou páginas genéricas que ainda usavam o sistema frio/branco antigo, incluindo `/treino`, `/nutricao`, `/evolucao`, `/perfil-fitness`, `/recuperar-senha` e `/redefinir-senha`.
 
 Em vez de substituir a lógica funcional dessas páginas, foi criado um sistema visual comum em `src/app/premium-pages.css` e importado no `src/app/layout.tsx`. Isso preserva a lógica, dados e fluxos existentes enquanto transforma os destinos genéricos num padrão premium.
 
@@ -82,11 +75,7 @@ Os preços aprovados para a estrutura de assinatura são:
 - Pro: R$ 39,90/mês ou R$ 299,90/ano.
 - Premium: R$ 59,90/mês ou R$ 449,90/ano.
 
-A tabela `premium_plans` foi populada com PRETREINO Pro (R$ 39,90/mês) e PRETREINO Premium (R$ 59,90/mês), e a página `/premium` passou a ler esses planos dinamicamente. O checkout externo ainda não deve ser apresentado como pagamento concluído; a ligação a um provedor de pagamentos real é uma etapa própria de integração comercial.
-
-## Continuação implementada
-
-A análise profunda do projecto identificou que o banco já tinha núcleos para IA, comunidade, profissionais, academias e métricas, mas faltavam superfícies premium correspondentes. Foram adicionadas:
+## Superfícies premium implementadas
 
 - `/ia` — espaço premium para conversas persistidas em `ai_conversations`.
 - `/comunidade` — feed premium e publicação em `community_posts`.
@@ -95,6 +84,25 @@ A análise profunda do projecto identificou que o banco já tinha núcleos para 
 - `/admin` — centro premium de métricas ligado à view `admin_platform_metrics`.
 
 As páginas novas não redesenham Home, Login, Cadastro, Confirmar Email ou Dashboard aprovadas.
+
+## ETAPA 1 — SISTEMA DE ASSINATURA
+
+A fundação do sistema de assinatura foi implementada sem fingir pagamentos reais:
+
+- Migration `20260822_subscription_system_foundation` aplicada no Supabase.
+- `premium_plans` agora possui planos mensais e anuais.
+- Pro mensal: R$ 39,90; Pro anual: R$ 299,90.
+- Premium mensal: R$ 59,90; Premium anual: R$ 449,90.
+- Índice garante no máximo uma assinatura activa/trialing/past_due por utilizador.
+- RPC autenticada `get_my_subscription()` devolve apenas a assinatura do utilizador autenticado.
+- Nova página `/assinatura` mostra plano actual, Free quando não existe assinatura, ciclo mensal/anual, preços e selecção de plano.
+- `/premium` deixou de misturar planos anuais na apresentação mensal e os botões agora conduzem ao workspace `/assinatura`.
+- Os cards da Loja mantêm o design aprovado e agora conduzem ao sistema de assinatura quando aplicável.
+- Nenhum clique de escolha de plano finge que houve cobrança ou activa uma assinatura paga sem pagamento.
+
+### Limite consciente desta etapa
+
+O checkout financeiro real ainda não foi ligado. Isso pertence à etapa seguinte de pagamentos: será necessário escolher/configurar o provedor de cobrança, criar checkout seguro e webhooks para actualizar `premium_subscriptions`. Até lá, o sistema não deve criar assinaturas pagas fictícias.
 
 ## Segurança e performance
 
@@ -113,6 +121,7 @@ O Advisor também sinaliza optimizações de RLS (`(select auth.uid())`), polít
 7. Priorizar experiência premium e caminhos de monetização claros.
 8. Testar como utilizador final, seguindo os links e botões da plataforma.
 9. Quando for pedido que todas as páginas sejam premium, aplicar o padrão aos destinos frios sem destruir a lógica ou as páginas explicitamente aprovadas.
+10. Em assinaturas, nunca simular uma cobrança real. A assinatura paga só fica activa após confirmação do provedor de pagamentos.
 
 ## Infraestrutura conhecida
 
@@ -129,6 +138,7 @@ O Advisor também sinaliza optimizações de RLS (`(select auth.uid())`), polít
 - Imagens no cadastro foram testadas; a decisão final foi deixar o fundo sem foto.
 - O utilizador explicitou várias vezes que alterações devem ser cirúrgicas e apenas no ponto solicitado.
 - O utilizador quer continuar o desenvolvimento por etapas e testar cada fluxo como utilizador real.
+- Cada etapa deve terminar com deployment funcional e link de teste.
 - O comando de continuidade do projecto é `PRE TREINO`.
 
 ## Fonte de verdade
