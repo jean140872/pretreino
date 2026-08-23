@@ -37,16 +37,6 @@ Quando o utilizador aprovar uma página, layout, fluxo ou decisão, essa parte f
 - A página de cadastro teve uma versão visual premium aprovada; depois o fundo fotográfico foi removido a pedido do utilizador. Não reintroduzir fotos no cadastro sem autorização.
 - A Dashboard actualmente aprovada deve ser preservada nas partes já validadas.
 
-## Fluxos já testados / problemas encontrados
-
-- Botões da Home para entrar/cadastrar devem seguir os caminhos aprovados.
-- A página antiga `/login` simples em HTML foi considerada inadequada e não deve ser usada como destino visual dos botões aprovados. A versão actual de Login é premium.
-- O cadastro deve criar a conta e conduzir ao fluxo de confirmação de e-mail quando a configuração exigir confirmação.
-- A confirmação de e-mail tem apresentação premium.
-- Depois de autenticar, o utilizador entra na Dashboard.
-- A Dashboard foi testada com utilizador real e aprovada como base visual.
-- Foram encontrados destinos internos demasiado simples; foi feita uma varredura e esses destinos receberam um sistema visual premium comum.
-
 ## Dashboard — requisitos de produto
 
 A Dashboard não deve mostrar apenas treino, alimentação, evolução e perfil. Deve tornar visíveis e acessíveis, desde cedo:
@@ -57,14 +47,6 @@ A Dashboard não deve mostrar apenas treino, alimentação, evolução e perfil.
 - Caminhos para compra/assinatura.
 - Conteúdos/serviços que podem gerar receita.
 - Treino, alimentação, evolução e perfil continuam disponíveis.
-
-O objectivo é permitir que um utilizador curioso experimente rapidamente as partes do produto e também encontre as áreas comerciais sem procurar demasiado.
-
-## Varredura premium
-
-Foi feita uma revisão da árvore de `src/app` e dos destinos internos. A análise identificou páginas genéricas que ainda usavam o sistema frio/branco antigo, incluindo `/treino`, `/nutricao`, `/evolucao`, `/perfil-fitness`, `/recuperar-senha` e `/redefinir-senha`.
-
-Em vez de substituir a lógica funcional dessas páginas, foi criado um sistema visual comum em `src/app/premium-pages.css` e importado no `src/app/layout.tsx`. Isso preserva a lógica, dados e fluxos existentes enquanto transforma os destinos genéricos num padrão premium.
 
 ## Loja e monetização
 
@@ -85,30 +67,51 @@ Os preços aprovados para a estrutura de assinatura são:
 
 As páginas novas não redesenham Home, Login, Cadastro, Confirmar Email ou Dashboard aprovadas.
 
-## ETAPA 1 — SISTEMA DE ASSINATURA
+## Sistema de assinatura
 
-A fundação do sistema de assinatura foi implementada sem fingir pagamentos reais:
-
-- Migration `20260822_subscription_system_foundation` aplicada no Supabase.
-- `premium_plans` agora possui planos mensais e anuais.
+- `premium_plans` contém planos mensais e anuais.
 - Pro mensal: R$ 39,90; Pro anual: R$ 299,90.
 - Premium mensal: R$ 59,90; Premium anual: R$ 449,90.
-- Índice garante no máximo uma assinatura activa/trialing/past_due por utilizador.
-- RPC autenticada `get_my_subscription()` devolve apenas a assinatura do utilizador autenticado.
-- Nova página `/assinatura` mostra plano actual, Free quando não existe assinatura, ciclo mensal/anual, preços e selecção de plano.
-- `/premium` deixou de misturar planos anuais na apresentação mensal e os botões agora conduzem ao workspace `/assinatura`.
-- Os cards da Loja mantêm o design aprovado e agora conduzem ao sistema de assinatura quando aplicável.
-- Nenhum clique de escolha de plano finge que houve cobrança ou activa uma assinatura paga sem pagamento.
+- A página `/assinatura` apresenta Free, Pro e Premium e separa mensal/anual.
+- O checkout usa `/api/checkout` e só activa uma assinatura após confirmação do provedor.
+- Webhooks do Mercado Pago actualizam `premium_subscriptions` e `payment_events`.
+- Nenhuma cobrança ou assinatura paga é simulada.
 
-### Limite consciente desta etapa
+## Comércio da Loja
 
-O checkout financeiro real ainda não foi ligado. Isso pertence à etapa seguinte de pagamentos: será necessário escolher/configurar o provedor de cobrança, criar checkout seguro e webhooks para actualizar `premium_subscriptions`. Até lá, o sistema não deve criar assinaturas pagas fictícias.
+- `/loja` é o catálogo premium principal.
+- `/produtos-suplementos` é a superfície dedicada de produtos e suplementos.
+- `/carrinho` controla quantidades, remoção e subtotal.
+- `/checkout-loja` recolhe dados de pedido e inicia pagamento seguro.
+- `/pedidos` mostra o histórico do utilizador.
+- `/admin/loja` permite gestão de catálogo.
+- `/admin/pedidos` permite gestão do ciclo dos pedidos.
+- `store_orders` e `store_order_items` guardam snapshots comerciais do pedido.
+- Stock é validado no checkout e abatido quando o pagamento é aprovado.
+- O webhook de pagamento evita abatimentos duplicados usando o evento externo como referência.
+- Produtos em destaque, stock e disponibilidade são reflectidos na Loja.
+
+## Painel administrativo
+
+O painel administrativo foi expandido para funcionar como centro de controlo do produto, não como uma página com apenas duas opções.
+
+- `/admin` — visão geral e métricas.
+- `/admin/gestao` — pessoas, funções, receita, planos, catálogo, parceiros e auditoria.
+- `/admin/loja` — gestão operacional completa da Loja.
+- `/admin/pedidos` — operação dos pedidos.
+- Funções administrativas ficam protegidas por verificação de administrador.
+- Eventos administrativos são registados em `admin_events`.
 
 ## Segurança e performance
 
-Foi aplicada a migration `20260821_security_and_fk_index_hardening` para restringir execução de funções SECURITY DEFINER que não precisam ser chamadas pelo cliente e para adicionar índices de cobertura às foreign keys sinalizadas pelo Database Advisor. A segurança continua com RLS activo nas tabelas públicas.
+Foi aplicada a migration `20260821_security_and_fk_index_hardening` e, na consolidação final, `20260823_final_commerce_hardening`.
 
-O Advisor também sinaliza optimizações de RLS (`(select auth.uid())`), políticas permissivas duplicadas e protecção contra passwords comprometidas. A protecção de passwords vazadas depende da configuração Auth do projecto e não foi simulada no código.
+A consolidação final:
+- adicionou índice para `store_order_items.product_id`;
+- fixou o `search_path` da função `touch_store_order_updated_at`;
+- preservou RLS e as verificações administrativas existentes.
+
+O Advisor ainda pode sinalizar optimizações de RLS e funções administrativas SECURITY DEFINER que são deliberadas para os fluxos existentes. A protecção de passwords vazadas depende da configuração Auth do projecto e não deve ser simulada no código.
 
 ## Princípios de alteração
 
@@ -122,6 +125,7 @@ O Advisor também sinaliza optimizações de RLS (`(select auth.uid())`), polít
 8. Testar como utilizador final, seguindo os links e botões da plataforma.
 9. Quando for pedido que todas as páginas sejam premium, aplicar o padrão aos destinos frios sem destruir a lógica ou as páginas explicitamente aprovadas.
 10. Em assinaturas, nunca simular uma cobrança real. A assinatura paga só fica activa após confirmação do provedor de pagamentos.
+11. O comando de continuidade é `PRE TREINO`.
 
 ## Infraestrutura conhecida
 
@@ -129,17 +133,12 @@ O Advisor também sinaliza optimizações de RLS (`(select auth.uid())`), polít
 - Branch: `main`
 - Render Web Service: `pretreino`
 - URL pública: `https://pretreino.onrender.com`
+- Supabase: `fitness-ia-platform`, região `sa-east-1`.
 - Supabase configurado no ambiente do Render.
 
-## Histórico relevante de decisões
+## Estado da consolidação
 
-- Home/landing foi aprovada e deve permanecer intacta.
-- Cadastro premium foi aprovado; não redesenhar sem pedido.
-- Imagens no cadastro foram testadas; a decisão final foi deixar o fundo sem foto.
-- O utilizador explicitou várias vezes que alterações devem ser cirúrgicas e apenas no ponto solicitado.
-- O utilizador quer continuar o desenvolvimento por etapas e testar cada fluxo como utilizador real.
-- Cada etapa deve terminar com deployment funcional e link de teste.
-- O comando de continuidade do projecto é `PRE TREINO`.
+A última passagem consolidou os módulos existentes em vez de substituir páginas aprovadas. A árvore actual inclui autenticação, dashboard, evolução, treino, nutrição, IA, comunidade, identidade visual, academias, profissionais, premium, assinatura, loja, produtos/suplementos, carrinho, checkout, pedidos e painel administrativo. O último build de produção foi concluído com sucesso no Render.
 
 ## Fonte de verdade
 
