@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(req: Request) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const body = await req.json().catch(() => ({}))
   const id = body?.data?.id || body?.id || new URL(req.url).searchParams.get('id')
   const type = body?.type || body?.topic || 'unknown'
