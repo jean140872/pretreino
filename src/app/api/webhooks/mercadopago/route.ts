@@ -18,6 +18,13 @@ export async function POST(req: Request) {
     if (orderId) {
       const statusMap: Record<string,string> = { approved:'paid', pending:'pending', in_process:'pending', rejected:'canceled', cancelled:'canceled', refunded:'refunded', charged_back:'refunded' }
       const status = statusMap[payment.status] || 'pending'
+      if (status === 'paid') {
+        const {data:order}=await supabase.from('store_orders').select('stock_decremented_at').eq('id',orderId).maybeSingle()
+        if (!order?.stock_decremented_at) {
+          const {data:stockOk}=await supabase.rpc('decrement_store_order_stock',{p_order_id:orderId})
+          if (stockOk === false) return NextResponse.json({received:true,inventory:'insufficient'})
+        }
+      }
       await supabase.from('store_orders').update({ status, external_payment_id:String(payment.id), updated_at:new Date().toISOString() }).eq('id',orderId)
       const {data:order}=await supabase.from('store_orders').select('user_id').eq('id',orderId).maybeSingle()
       await supabase.from('payment_events').insert({user_id:order?.user_id||null,provider:'mercadopago',external_event_id:String(id),event_type:type,status,payload:payment})
