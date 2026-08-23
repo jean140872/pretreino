@@ -1,78 +1,10 @@
 'use client'
 
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import {useEffect,useMemo,useState} from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import {createClient} from '@/lib/supabase/client'
 
-type Food = { name: string; quantity: number | null; unit: string | null; calories: number | null; protein_g: number | null; carbs_g: number | null; fat_g: number | null; sort_order: number }
-type Meal = { id: string; meal_type: string; meal_time: string | null; notes: string | null; sort_order: number; nutrition_foods: Food[] }
-type Plan = { id: string; name: string; goal: string | null; calories_target: number | null; protein_target_g: number | null; carbs_target_g: number | null; fat_target_g: number | null; nutrition_meals: Meal[] }
-
-export default function NutricaoPage() {
-  const [plan, setPlan] = useState<Plan | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    const client = createClient()
-    client.auth.getUser().then(async ({ data }) => {
-      if (!data.user) { window.location.href = '/login'; return }
-      const { data: row, error: queryError } = await client
-        .from('nutrition_plans')
-        .select('id,name,goal,calories_target,protein_target_g,carbs_target_g,fat_target_g,nutrition_meals(id,meal_type,meal_time,notes,sort_order,nutrition_foods(name,quantity,unit,calories,protein_g,carbs_g,fat_g,sort_order))')
-        .eq('user_id', data.user.id)
-        .eq('active', true)
-        .maybeSingle()
-      if (queryError) setError('Não foi possível carregar seu plano de alimentação.')
-      else setPlan(row as Plan | null)
-      setLoading(false)
-    })
-  }, [])
-
-  const totals = useMemo(() => {
-    const foods = plan?.nutrition_meals?.flatMap(meal => meal.nutrition_foods || []) || []
-    return foods.reduce((acc, food) => ({
-      calories: acc.calories + Number(food.calories || 0),
-      protein: acc.protein + Number(food.protein_g || 0),
-      carbs: acc.carbs + Number(food.carbs_g || 0),
-      fat: acc.fat + Number(food.fat_g || 0),
-    }), { calories: 0, protein: 0, carbs: 0, fat: 0 })
-  }, [plan])
-
-  if (loading) return <main className="page-shell"><p className="muted">Carregando alimentação...</p></main>
-
-  return (
-    <main className="page-shell">
-      <header className="topbar"><Link href="/dashboard" className="brand">PRETREINO</Link><Link href="/dashboard">Dashboard</Link></header>
-      <section className="section-heading">
-        <div><div className="eyebrow">NUTRIÇÃO</div><h1>Sua alimentação</h1><p className="muted">Acompanhe o plano alimentar definido para o seu objetivo.</p></div>
-      </section>
-
-      {error && <p className="notice error-notice">{error}</p>}
-      {!plan && !error && <section className="module-card"><span>PLANO ALIMENTAR</span><h2>Seu plano ainda não foi criado</h2><p>Quando houver um plano activo no seu perfil, suas refeições e metas aparecerão aqui.</p></section>}
-      {plan && <>
-        <section className="stats-grid">
-          <div className="stat-card"><span>CALORIAS DO PLANO</span><strong>{plan.calories_target ? `${Math.round(plan.calories_target)} kcal` : '—'}</strong></div>
-          <div className="stat-card"><span>PROTEÍNA</span><strong>{plan.protein_target_g ? `${Math.round(plan.protein_target_g)} g` : '—'}</strong></div>
-          <div className="stat-card"><span>CARBOIDRATOS</span><strong>{plan.carbs_target_g ? `${Math.round(plan.carbs_target_g)} g` : '—'}</strong></div>
-        </section>
-        <section className="module-card" style={{marginBottom:16}}><span>{plan.goal?.toUpperCase() || 'OBJETIVO'}</span><h2>{plan.name}</h2><p>Metas: {plan.fat_target_g ? `${Math.round(plan.fat_target_g)} g de gordura` : 'gordura não definida'}.</p><p style={{marginTop:10,color:'#69707c'}}>Totais cadastrados nas refeições: {Math.round(totals.calories)} kcal · {Math.round(totals.protein)} g proteína · {Math.round(totals.carbs)} g carboidratos · {Math.round(totals.fat)} g gordura.</p></section>
-        <div className="dashboard-grid">
-          {[...(plan.nutrition_meals || [])].sort((a,b) => a.sort_order - b.sort_order).map(meal => (
-            <section className="module-card" key={meal.id}>
-              <span>{meal.meal_time ? `${meal.meal_time.slice(0,5)} · ` : ''}{meal.meal_type.toUpperCase()}</span>
-              <h2>{meal.meal_type}</h2>
-              {meal.notes && <p style={{marginBottom:12}}>{meal.notes}</p>}
-              {(meal.nutrition_foods || []).sort((a,b) => a.sort_order-b.sort_order).map((food,index) => (
-                <div key={`${food.name}-${index}`} style={{padding:'11px 0',borderTop:'1px solid #eee',display:'flex',justifyContent:'space-between',gap:16}}>
-                  <span style={{color:'#16181d',fontWeight:700}}>{food.name}</span>
-                  <small style={{color:'#69707c',textAlign:'right'}}>{food.quantity ?? ''}{food.unit || ''}{food.calories ? ` · ${Math.round(food.calories)} kcal` : ''}</small>
-                </div>
-              ))}
-            </section>
-          ))}
-        </div>
-      </>}
-    </main>
-  )
-}
+type Food={name:string;quantity:number|null;unit:string|null;calories:number|null;protein_g:number|null;carbs_g:number|null;fat_g:number|null;sort_order:number}
+type Meal={id:string;meal_type:string;meal_time:string|null;notes:string|null;sort_order:number;nutrition_foods:Food[]}
+type Plan={id:string;name:string;goal:string|null;calories_target:number|null;protein_target_g:number|null;carbs_target_g:number|null;fat_target_g:number|null;nutrition_meals:Meal[]}
+export default function NutricaoPage(){const[plan,setPlan]=useState<Plan|null>(null);const[loading,setLoading]=useState(true);const[error,setError]=useState('');useEffect(()=>{const client=createClient();client.auth.getUser().then(async({data})=>{if(!data.user){window.location.href='/login';return}const{data:row,error:queryError}=await client.from('nutrition_plans').select('id,name,goal,calories_target,protein_target_g,carbs_target_g,fat_target_g,nutrition_meals(id,meal_type,meal_time,notes,sort_order,nutrition_foods(name,quantity,unit,calories,protein_g,carbs_g,fat_g,sort_order))').eq('user_id',data.user.id).eq('active',true).maybeSingle();if(queryError)setError('Não foi possível carregar seu plano de alimentação.');else setPlan(row as Plan|null);setLoading(false)})},[]);const totals=useMemo(()=>{const foods=plan?.nutrition_meals?.flatMap(m=>m.nutrition_foods||[])||[];return foods.reduce((a,f)=>({calories:a.calories+Number(f.calories||0),protein:a.protein+Number(f.protein_g||0),carbs:a.carbs+Number(f.carbs_g||0),fat:a.fat+Number(f.fat_g||0)}),{calories:0,protein:0,carbs:0,fat:0})},[plan]);if(loading)return <main className="page-shell"><p className="muted">Carregando alimentação...</p></main>;return <main className="page-shell"><header className="topbar"><Link href="/dashboard" className="brand">PRETREINO</Link><div style={{display:'flex',gap:16}}><Link href="/nutricao/scanner">Câmara de calorias</Link><Link href="/dashboard">Dashboard</Link></div></header><section className="section-heading"><div><div className="eyebrow">NUTRIÇÃO</div><h1>Sua alimentação</h1><p className="muted">Acompanhe o plano alimentar definido para o seu objetivo.</p></div></section><Link href="/nutricao/scanner" className="camera-banner"><div><span>VISÃO IA · NOVO</span><h2>Fotografe a sua refeição</h2><p>Estime calorias, proteína, carboidratos, gorduras e porções com a câmara.</p></div><strong>ABRIR CÂMARA →</strong></Link>{error&&<p className="notice error-notice">{error}</p>}{!plan&&!error&&<section className="module-card"><span>PLANO ALIMENTAR</span><h2>Seu plano ainda não foi criado</h2><p>Quando houver um plano activo no seu perfil, suas refeições e metas aparecerão aqui.</p></section>}{plan&&<><section className="stats-grid"><div className="stat-card"><span>CALORIAS DO PLANO</span><strong>{plan.calories_target?`${Math.round(plan.calories_target)} kcal`:'—'}</strong></div><div className="stat-card"><span>PROTEÍNA</span><strong>{plan.protein_target_g?`${Math.round(plan.protein_target_g)} g`:'—'}</strong></div><div className="stat-card"><span>CARBOIDRATOS</span><strong>{plan.carbs_target_g?`${Math.round(plan.carbs_target_g)} g`:'—'}</strong></div></section><section className="module-card" style={{marginBottom:16}}><span>{plan.goal?.toUpperCase()||'OBJETIVO'}</span><h2>{plan.name}</h2><p>Metas: {plan.fat_target_g?`${Math.round(plan.fat_target_g)} g de gordura`:'gordura não definida'}.</p><p style={{marginTop:10,color:'#69707c'}}>Totais cadastrados nas refeições: {Math.round(totals.calories)} kcal · {Math.round(totals.protein)} g proteína · {Math.round(totals.carbs)} g carboidratos · {Math.round(totals.fat)} g gordura.</p></section><div className="dashboard-grid">{[...(plan.nutrition_meals||[])].sort((a,b)=>a.sort_order-b.sort_order).map(meal=><section className="module-card" key={meal.id}><span>{meal.meal_time?`${meal.meal_time.slice(0,5)} · `:''}{meal.meal_type.toUpperCase()}</span><h2>{meal.meal_type}</h2>{meal.notes&&<p style={{marginBottom:12}}>{meal.notes}</p>}{(meal.nutrition_foods||[]).sort((a,b)=>a.sort_order-b.sort_order).map((food,index)=><div key={`${food.name}-${index}`} style={{padding:'11px 0',borderTop:'1px solid #eee',display:'flex',justifyContent:'space-between',gap:16}}><span style={{color:'#16181d',fontWeight:700}}>{food.name}</span><small style={{color:'#69707c',textAlign:'right'}}>{food.quantity??''}{food.unit||''}{food.calories?` · ${Math.round(food.calories)} kcal`:''}</small></div>)}</section>)}</div></>}</main>}
