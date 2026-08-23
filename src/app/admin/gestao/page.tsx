@@ -11,7 +11,6 @@ type Plan = { id: string; name: string; price: number | null; interval: string; 
 type Product = { id: string; name: string; category: string | null; price: number | null; currency: string; active: boolean }
 type Partner = { id: string; name: string; specialty?: string | null; city?: string | null; active: boolean }
 type Audit = { id: string; event_type: string; entity_type: string | null; created_at: string; metadata: unknown }
-
 const roles = ['user', 'partner', 'professional', 'moderator', 'admin']
 
 export default function AdminGestaoPage() {
@@ -31,11 +30,11 @@ export default function AdminGestaoPage() {
   const [planName, setPlanName] = useState('')
   const [planPrice, setPlanPrice] = useState('')
   const [planInterval, setPlanInterval] = useState('month')
-
-  const client = createClient()
+  const getClient = () => createClient()
 
   async function load() {
     setMessage('')
+    const client = getClient()
     const { data: auth } = await client.auth.getUser()
     if (!auth.user) { setReady(false); return }
     const { data: admin } = await client.rpc('is_admin', { p_user_id: auth.user.id })
@@ -58,54 +57,52 @@ export default function AdminGestaoPage() {
     setGyms((results[5].data || []) as Partner[])
     setAudit((results[6].data || []) as Audit[])
   }
-
   useEffect(() => { void load() }, [])
 
   async function log(eventType: string, entityType: string, entityId?: string, metadata: Record<string, unknown> = {}) {
+    const client = getClient()
     const { data } = await client.auth.getUser()
     if (!data.user) return
     await client.from('admin_events').insert({ admin_user_id: data.user.id, event_type: eventType, entity_type: entityType, entity_id: entityId || null, metadata })
   }
-
   async function changeRole(id: string, value: string) {
+    const client = getClient()
     await client.from('user_roles').delete().eq('user_id', id)
     await client.from('user_roles').insert({ user_id: id, role: value })
-    await log('role_changed', 'user_role', id, { role: value })
-    await load()
+    await log('role_changed', 'user_role', id, { role: value }); await load()
   }
-
   async function changeStatus(id: string, value: string) {
+    const client = getClient()
     const { error } = await client.from('profiles').update({ account_status: value }).eq('id', id)
     if (error) { setMessage('Não foi possível actualizar o utilizador.'); return }
-    await log('account_status_changed', 'profile', id, { status: value })
-    await load()
+    await log('account_status_changed', 'profile', id, { status: value }); await load()
   }
-
   async function createPlan() {
     if (!planName.trim()) return
+    const client = getClient()
     const { error } = await client.from('premium_plans').insert({ name: planName.trim(), price: planPrice === '' ? null : Number(planPrice), currency: 'BRL', interval: planInterval, active: true, provider: 'mercadopago' })
     if (error) { setMessage('Não foi possível criar o plano.'); return }
     setPlanName(''); setPlanPrice(''); await log('plan_created', 'premium_plan'); await load()
   }
-
   async function togglePlan(plan: Plan) {
+    const client = getClient()
     await client.from('premium_plans').update({ active: !plan.active }).eq('id', plan.id)
     await log('plan_status_changed', 'premium_plan', plan.id, { active: !plan.active }); await load()
   }
-
   async function createProduct() {
     if (!productName.trim()) return
+    const client = getClient()
     const { error } = await client.from('store_products').insert({ name: productName.trim(), category: productCategory, price: productPrice === '' ? null : Number(productPrice), currency: 'BRL', active: true })
     if (error) { setMessage('Não foi possível criar o produto.'); return }
     setProductName(''); setProductPrice(''); await log('product_created', 'store_product'); await load()
   }
-
   async function toggleProduct(product: Product) {
+    const client = getClient()
     await client.from('store_products').update({ active: !product.active }).eq('id', product.id)
     await log('product_status_changed', 'store_product', product.id, { active: !product.active }); await load()
   }
-
   async function togglePartner(table: 'professionals' | 'gyms', partner: Partner) {
+    const client = getClient()
     await client.from(table).update({ active: !partner.active }).eq('id', partner.id)
     await log('partner_status_changed', table, partner.id, { active: !partner.active }); await load()
   }
@@ -121,5 +118,4 @@ export default function AdminGestaoPage() {
   {tab === 'audit' && <section className="panel"><div className="head"><div><small>SEGURANÇA</small><h2>Auditoria administrativa</h2></div><b>{audit.length}</b></div>{audit.map(event => <article className="audit" key={event.id}><div><strong>{event.event_type}</strong><span>{event.entity_type || '—'} · {new Date(event.created_at).toLocaleString('pt-BR')}</span></div><code>{JSON.stringify(event.metadata || {})}</code></article>)}{!audit.length && <div className="empty">Ainda não existem eventos.</div>}</section>}
   </div><style jsx>{styles}</style></main>
 }
-
 const styles = `*{box-sizing:border-box}.page{min-height:100vh;background:radial-gradient(circle at 80% 0%,rgba(124,58,237,.2),transparent 35%),#070810;color:#fff;font-family:Arial,sans-serif;padding-bottom:80px}.page header{height:78px;border-bottom:1px solid rgba(255,255,255,.07);padding:0 5vw;display:flex;align-items:center;justify-content:space-between;background:rgba(7,8,16,.9);backdrop-filter:blur(18px);position:sticky;top:0;z-index:5}.page header nav{display:flex;gap:20px}.page header nav a{color:#aeb2c0;font-size:11px}.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:900;letter-spacing:.08em}.brand span{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,#a855f7,#4f46e5)}.shell{max-width:1180px;margin:auto;padding:55px 24px}.hero small,.panel small{color:#a78bfa;font-size:9px;letter-spacing:.18em;font-weight:900}.hero h1{font-size:clamp(46px,6vw,72px);line-height:.94;letter-spacing:-.06em;margin:12px 0}.hero em{font-style:normal;background:linear-gradient(90deg,#c084fc,#60a5fa);-webkit-background-clip:text;color:transparent}.hero p{max-width:760px;color:#9296a8;line-height:1.7}.tabs{display:flex;gap:6px;margin:34px 0 18px;padding:5px;background:#0c0e17;border:1px solid rgba(255,255,255,.07);border-radius:12px;width:max-content}.tabs button{border:0;background:transparent;color:#777b8e;padding:10px 15px;border-radius:8px;font-size:11px;font-weight:800}.tabs button.active{background:rgba(139,92,246,.2);color:#fff}.message{padding:12px;border:1px solid rgba(251,191,36,.2);color:#d6b45a;background:rgba(251,191,36,.05);border-radius:10px;font-size:11px;margin-bottom:14px}.grid{display:grid;grid-template-columns:1fr 330px;gap:14px}.panel{background:#0c0e17;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:23px}.head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:15px}.panel h2{font-size:24px;margin:8px 0 18px}.head>b{color:#777b8e;font-size:12px}.head a{color:#c4b5fd;font-size:10px}.row{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:14px 0;border-top:1px solid rgba(255,255,255,.06)}.row strong{display:block;font-size:12px}.row span{display:block;color:#707587;font-size:9px;margin-top:4px}.controls{display:flex;gap:7px;align-items:center}.controls select,.controls button,.row>button,.mini button{border:1px solid rgba(255,255,255,.08);background:#080a11;color:#bfc2ce;border-radius:8px;padding:8px;font-size:9px}.on{color:#86efac!important;border-color:rgba(52,211,153,.2)!important}.stat{padding:14px 0;border-top:1px solid rgba(255,255,255,.06)}.stat b{display:block;font-size:28px}.stat span{color:#707587;font-size:9px}label{display:grid;gap:7px;color:#aeb2bf;font-size:10px;font-weight:800;margin:13px 0}input,select{width:100%;padding:10px;border-radius:9px;border:1px solid rgba(255,255,255,.09);background:#080a11;color:#fff;font:inherit}.primary{width:100%;border:0;border-radius:10px;padding:12px;background:linear-gradient(90deg,#7c2ff0,#4f46e5);color:#fff;font-weight:900;font-size:11px;margin-top:10px}.secondary{display:block;text-align:center;margin-top:12px;color:#c4b5fd;font-size:10px}.mini{display:grid;grid-template-columns:1fr auto;gap:4px;padding:13px 0;border-top:1px solid rgba(255,255,255,.06)}.mini strong{font-size:11px}.mini span{font-size:9px;color:#707587}.mini button{grid-row:1/3;grid-column:2}.audit{display:flex;justify-content:space-between;gap:20px;padding:13px 0;border-top:1px solid rgba(255,255,255,.06)}.audit strong{display:block;font-size:10px}.audit span{display:block;color:#707587;font-size:8px;margin-top:4px}.audit code{max-width:55%;overflow:hidden;color:#777b8e;font-size:8px}.empty,.center,.denied{padding:45px;text-align:center;border:1px dashed rgba(255,255,255,.12);border-radius:18px;color:#7b8090}.denied{max-width:500px;margin:18vh auto;background:#0c0e17}.denied small{color:#a78bfa}.denied h1{color:#fff}@media(max-width:800px){.grid{grid-template-columns:1fr}.tabs{width:100%;overflow:auto}.row{align-items:flex-start;flex-direction:column}.controls{width:100%}.controls select{flex:1}.audit{flex-direction:column}.audit code{max-width:100%}}`
