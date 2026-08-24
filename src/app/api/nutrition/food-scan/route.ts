@@ -5,11 +5,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 const schema = { type:'object', additionalProperties:false, properties:{ meal_name:{type:'string'}, confidence:{type:'number'}, calories:{type:'number'}, protein_g:{type:'number'}, carbs_g:{type:'number'}, fat_g:{type:'number'}, serving_description:{type:'string'}, notes:{type:'string'}, items:{type:'array',items:{type:'object',additionalProperties:false,properties:{name:{type:'string'},estimated_grams:{type:'number'},calories:{type:'number'},protein_g:{type:'number'},carbs_g:{type:'number'},fat_g:{type:'number'}},required:['name','estimated_grams','calories','protein_g','carbs_g','fat_g']}}},required:['meal_name','confidence','calories','protein_g','carbs_g','fat_g','serving_description','notes','items'] }
 
 const LIMITS = { Free: 3, Pro: 30, Premium: null } as const
-
 type PlanName = keyof typeof LIMITS
 
 export async function POST(req:Request){
  const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user)return NextResponse.json({error:'Faça login para usar o scanner.'},{status:401})
+ const ownerEmail=(process.env.PRETREINO_OWNER_EMAIL||'').trim().toLowerCase()
+ const isOwner=!!ownerEmail && user.email?.trim().toLowerCase()===ownerEmail
  const form=await req.formData(); const file=form.get('image'); if(!(file instanceof File))return NextResponse.json({error:'Envie uma fotografia do alimento.'},{status:400})
  if(file.size>8*1024*1024)return NextResponse.json({error:'A imagem deve ter no máximo 8 MB.'},{status:413})
  if(!file.type.startsWith('image/'))return NextResponse.json({error:'O ficheiro enviado não é uma imagem.'},{status:400})
@@ -17,7 +18,7 @@ export async function POST(req:Request){
  const {data:sub}=await supabase.from('premium_subscriptions').select('status,premium_plans(name)').eq('user_id',user.id).eq('status','active').maybeSingle()
  const rawPlan=(sub?.premium_plans as {name?:string}|null)?.name
  const plan:PlanName=rawPlan==='Premium'?'Premium':rawPlan==='Pro'?'Pro':'Free'
- const limit=LIMITS[plan]
+ const limit=isOwner?null:LIMITS[plan]
  const used=count||0
  if(limit!==null && used>=limit)return NextResponse.json({error:plan==='Free'?'Você atingiu as 3 análises gratuitas deste mês. Continue no Pro ou Premium para análises avançadas.':`Você atingiu as ${limit} análises do Pro deste mês. Passe para o Premium para análises sem limite.`,upgradeUrl:'/assinatura',limitReached:true,plan},{status:402})
  const key=process.env.OPENAI_API_KEY; if(!key)return NextResponse.json({error:'O scanner de alimentos está pronto, mas a chave de IA ainda não foi configurada no ambiente.'},{status:503})
@@ -30,5 +31,5 @@ export async function POST(req:Request){
  const admin=createAdminClient(); const {data:saved,error:saveError}=await admin.from('food_scans').insert({user_id:user.id,meal_name:result.meal_name,confidence:result.confidence,calories:result.calories,protein_g:result.protein_g,carbs_g:result.carbs_g,fat_g:result.fat_g,serving_description:result.serving_description,items:result.items,notes:result.notes}).select('id,meal_name,confidence,calories,protein_g,carbs_g,fat_g,serving_description,items,notes,created_at').single()
  if(saveError)return NextResponse.json({error:'A análise foi concluída, mas não pôde ser guardada no histórico.'},{status:500})
  const remaining=limit===null?null:Math.max(0,limit-used-1)
- return NextResponse.json({scan:saved,remaining,remainingFree:remaining,plan})
+ return NextResponse.json({scan:saved,remaining,remainingFree:remaining,plan:isOwner?'Owner':plan,ownerAccess:isOwner})
 }
