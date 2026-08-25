@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(req: Request) {
   const supabase = await createClient()
@@ -11,8 +10,7 @@ export async function POST(req: Request) {
   const title = typeof body.title === 'string' ? body.title.trim().slice(0, 70) : ''
   if (!title) return NextResponse.json({ error: 'Escreva uma mensagem para iniciar a conversa.' }, { status: 400 })
 
-  const admin = createAdminClient()
-  const { data, error } = await admin
+  const { data, error } = await supabase
     .from('ai_conversations')
     .insert({
       user_id: user.id,
