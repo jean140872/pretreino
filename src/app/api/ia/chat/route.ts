@@ -51,37 +51,52 @@ export async function POST(req: Request) {
   const history = (previous || []).map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }))
   history.push({ role: 'user', content: message.trim() })
 
-  const system = `Você é a PRETREINO IA, assistente de fitness, treino e nutrição da plataforma PRETREINO. Seja prático, claro e personalizado. Use o contexto disponível, mas não invente dados. Quando falar de nutrição ou saúde, deixe claro quando for uma estimativa e recomende um profissional quando a situação exigir avaliação clínica. Nunca afirme ter acesso a dados que não estão no contexto. Responda em português do Brasil.
-
-Plano: ${isOwner ? 'Owner — acesso total para testes' : planName}
-Perfil: ${JSON.stringify(profile || {})}
-Perfil fitness: ${JSON.stringify(fitness || {})}
-Preferências: ${JSON.stringify(preferences || {})}
-Plano de treino activo: ${JSON.stringify(training || {})}
-Contexto da conversa: ${JSON.stringify(conversation.context || {})}`
+  const system = `Você é a PRETREINO IA, assistente de fitness, treino e nutrição da plataforma PRETREINO. Seja prático, claro e personalizado. Use o contexto disponível, mas não invente dados. Quando falar de nutrição ou saúde, deixe claro quando for uma estimativa e recomende um profissional quando a situação exigir avaliação clínica. Nunca afirme ter acesso a dados que não estão no contexto. Responda em português do Brasil.\n\nPlano: ${isOwner ? 'Owner — acesso total para testes' : planName}\nPerfil: ${JSON.stringify(profile || {})}\nPerfil fitness: ${JSON.stringify(fitness || {})}\nPreferências: ${JSON.stringify(preferences || {})}\nPlano de treino activo: ${JSON.stringify(training || {})}\nContexto da conversa: ${JSON.stringify(conversation.context || {})}`
 
   const key = process.env.OPENAI_API_KEY
   if (!key) return NextResponse.json({ error: 'A chave de IA ainda não está configurada no ambiente.' }, { status: 503 })
 
+  const model = process.env.OPENAI_CHAT_MODEL || 'gpt-4.1-mini'
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: process.env.OPENAI_CHAT_MODEL || 'gpt-4.1-mini',
-      instructions: system,
-      input: history,
-      max_output_tokens: 900,
-    }),
+    body: JSON.stringify({ model, instructions: system, input: history, max_output_tokens: 900 }),
   })
 
   const raw = await response.json().catch(() => ({}))
-  if (!response.ok) return NextResponse.json({ error: 'Não foi possível obter uma resposta da IA neste momento.' }, { status: 502 })
+  if (!response.ok) {
+    const openaiError = raw?.error || {}
+    console.error('PRETREINO IA OpenAI error', {
+      status: response.status,
+      code: openaiError?.code || null,
+      type: openaiError?.type || null,
+      message: openaiError?.message || null,
+      requestId: response.headers.get('x-request-id') || null,
+      model,
+      owner: isOwner,
+    })
+    if (isOwner) {
+      return NextResponse.json({
+        error: 'A chamada à OpenAI falhou.',
+        diagnostic: {
+          status: response.status,
+          code: openaiError?.code || null,
+          type: openaiError?.type || null,
+          message: openaiError?.message || null,
+          requestId: response.headers.get('x-request-id') || null,
+          model,
+        },
+      }, { status: 502 })
+    }
+    return NextResponse.json({ error: 'Não foi possível obter uma resposta da IA neste momento.' }, { status: 502 })
+  }
+
   const answer = raw.output?.flatMap((item: any) => item.content || []).find((item: any) => item.type === 'output_text')?.text?.trim()
   if (!answer) return NextResponse.json({ error: 'A IA não devolveu uma resposta válida.' }, { status: 502 })
 
   const { error: userMessageError } = await supabase.from('ai_messages').insert({ conversation_id: conversationId, user_id: user.id, role: 'user', content: message.trim(), metadata: { plan: isOwner ? 'Owner' : planName } })
   if (userMessageError) return NextResponse.json({ error: 'A IA respondeu, mas não foi possível guardar a mensagem.' }, { status: 500 })
-  const { error: assistantMessageError } = await supabase.from('ai_messages').insert({ conversation_id: conversationId, user_id: user.id, role: 'assistant', content: answer, metadata: { model: process.env.OPENAI_CHAT_MODEL || 'gpt-4.1-mini' } })
+  const { error: assistantMessageError } = await supabase.from('ai_messages').insert({ conversation_id: conversationId, user_id: user.id, role: 'assistant', content: answer, metadata: { model } })
   if (assistantMessageError) return NextResponse.json({ error: 'A resposta foi gerada, mas não pôde ser guardada.' }, { status: 500 })
 
   await supabase.from('ai_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId).eq('user_id', user.id)
