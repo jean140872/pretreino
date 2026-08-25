@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(req: Request) {
   const supabase = await createClient()
@@ -34,8 +33,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'A PRETREINO IA completa é um recurso Premium.', upgradeUrl: '/assinatura', premiumRequired: true }, { status: 402 })
   }
 
-  const admin = createAdminClient()
-  const { data: previous } = await admin
+  const { data: previous } = await supabase
     .from('ai_messages')
     .select('role,content,created_at')
     .eq('conversation_id', conversationId)
@@ -44,10 +42,10 @@ export async function POST(req: Request) {
     .limit(30)
 
   const [{ data: profile }, { data: fitness }, { data: preferences }, { data: training }] = await Promise.all([
-    admin.from('profiles').select('display_name,city').eq('id', user.id).maybeSingle(),
-    admin.from('fitness_profiles').select('goal,experience_level,sex,height_cm,notes').eq('user_id', user.id).maybeSingle(),
-    admin.from('fitness_preferences').select('weekly_frequency,training_location,available_equipment,preferred_activities,general_preferences').eq('user_id', user.id).maybeSingle(),
-    admin.from('training_plans').select('name,goal,days_per_week,active').eq('user_id', user.id).eq('active', true).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('profiles').select('display_name,city').eq('id', user.id).maybeSingle(),
+    supabase.from('fitness_profiles').select('goal,experience_level,sex,height_cm,notes').eq('user_id', user.id).maybeSingle(),
+    supabase.from('fitness_preferences').select('weekly_frequency,training_location,available_equipment,preferred_activities,general_preferences').eq('user_id', user.id).maybeSingle(),
+    supabase.from('training_plans').select('name,goal,days_per_week,active').eq('user_id', user.id).eq('active', true).order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ])
 
   const history = (previous || []).map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }))
@@ -81,12 +79,12 @@ Contexto da conversa: ${JSON.stringify(conversation.context || {})}`
   const answer = raw.output?.flatMap((item: any) => item.content || []).find((item: any) => item.type === 'output_text')?.text?.trim()
   if (!answer) return NextResponse.json({ error: 'A IA não devolveu uma resposta válida.' }, { status: 502 })
 
-  const { error: userMessageError } = await admin.from('ai_messages').insert({ conversation_id: conversationId, user_id: user.id, role: 'user', content: message.trim(), metadata: { plan: isOwner ? 'Owner' : planName } })
-  if (userMessageError) return NextResponse.json({ error: 'Não foi possível guardar a mensagem.' }, { status: 500 })
-  const { error: assistantMessageError } = await admin.from('ai_messages').insert({ conversation_id: conversationId, user_id: user.id, role: 'assistant', content: answer, metadata: { model: process.env.OPENAI_CHAT_MODEL || 'gpt-4.1-mini' } })
+  const { error: userMessageError } = await supabase.from('ai_messages').insert({ conversation_id: conversationId, user_id: user.id, role: 'user', content: message.trim(), metadata: { plan: isOwner ? 'Owner' : planName } })
+  if (userMessageError) return NextResponse.json({ error: 'A IA respondeu, mas não foi possível guardar a mensagem.' }, { status: 500 })
+  const { error: assistantMessageError } = await supabase.from('ai_messages').insert({ conversation_id: conversationId, user_id: user.id, role: 'assistant', content: answer, metadata: { model: process.env.OPENAI_CHAT_MODEL || 'gpt-4.1-mini' } })
   if (assistantMessageError) return NextResponse.json({ error: 'A resposta foi gerada, mas não pôde ser guardada.' }, { status: 500 })
 
-  await admin.from('ai_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId).eq('user_id', user.id)
+  await supabase.from('ai_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId).eq('user_id', user.id)
 
   return NextResponse.json({ answer, ownerAccess: isOwner, plan: isOwner ? 'Owner' : planName })
 }
