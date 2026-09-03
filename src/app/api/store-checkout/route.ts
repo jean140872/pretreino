@@ -20,12 +20,15 @@ export async function POST(req:Request){
  if(oe||!order)return NextResponse.json({error:'Não foi possível criar o pedido.'},{status:500})
  const {error:ie}=await admin.from('store_order_items').insert(normalized.map(x=>({order_id:order.id,product_id:x.p.id,product_name:x.p.name,unit_price:Number(x.p.price),quantity:x.q,currency:x.p.currency||'BRL'})))
  if(ie){await admin.from('store_orders').delete().eq('id',order.id);return NextResponse.json({error:'Não foi possível preparar os itens do pedido.'},{status:500})}
- const token=process.env.MERCADOPAGO_ACCESS_TOKEN
+ const token=process.env.ASAAS_API_KEY
  if(!token){await admin.from('store_orders').update({status:'canceled'}).eq('id',order.id);return NextResponse.json({error:'O pagamento da Loja ainda não está configurado no provedor.'},{status:503})}
  const origin=req.headers.get('origin')||process.env.NEXT_PUBLIC_APP_URL||'https://pretreino.onrender.com'
- const response=await fetch('https://api.mercadopago.com/checkout/preferences',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({items:normalized.map(x=>({id:x.p.id,title:x.p.name,quantity:x.q,currency_id:x.p.currency||'BRL',unit_price:Number(x.p.price)})),payer:{email:user.email},external_reference:order.id,back_urls:{success:`${origin}/pedidos`,failure:`${origin}/checkout-loja?status=failure`,pending:`${origin}/pedidos`},auto_return:'approved',notification_url:`${origin}/api/webhooks/mercadopago`})})
+ const apiUrl=(process.env.ASAAS_API_URL||'https://api.asaas.com/v3').replace(/\/$/,'')
+ const response=await fetch(`${apiUrl}/checkouts`,{method:'POST',headers:{access_token:token,'Content-Type':'application/json'},body:JSON.stringify({billingTypes:['PIX','CREDIT_CARD'],chargeTypes:['DETACHED'],minutesToExpire:60,externalReference:order.id,callback:{successUrl:`${origin}/pedidos`,cancelUrl:`${origin}/checkout-loja?status=failure`,expiredUrl:`${origin}/checkout-loja?status=expired`},items:normalized.map(x=>({name:x.p.name,description:x.p.name,quantity:x.q,value:Number(x.p.price)}))})})
  const data=await response.json().catch(()=>({}))
- if(!response.ok){await admin.from('store_orders').update({status:'canceled'}).eq('id',order.id);return NextResponse.json({error:'O provedor recusou a criação do pagamento.'},{status:502})}
- await admin.from('store_orders').update({external_preference_id:String(data.id)}).eq('id',order.id)
- return NextResponse.json({url:data.init_point||data.sandbox_init_point||null,orderId:order.id})
+ if(!response.ok||!data?.id){await admin.from('store_orders').update({status:'canceled'}).eq('id',order.id);console.error('Asaas store checkout failed',{status:response.status,data,orderId:order.id});return NextResponse.json({error:'O provedor recusou a criação do pagamento.'},{status:502})}
+ const checkoutId=String(data.id)
+ await admin.from('store_orders').update({external_preference_id:checkoutId}).eq('id',order.id)
+ await admin.from('payment_events').insert({user_id:user.id,plan_id:null,provider:'asaas',external_event_id:checkoutId,event_type:'checkout_created',status:'active',payload:{checkout_id:checkoutId,external_reference:order.id}})
+ return NextResponse.json({url:data.link||`https://asaas.com/checkoutSession/show?id=${encodeURIComponent(checkoutId)}`,orderId:order.id})
 }
