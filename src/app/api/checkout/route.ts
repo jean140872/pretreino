@@ -32,79 +32,58 @@ export async function POST(req: Request) {
 
   const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'https://pretreino.onrender.com'
 
-  if (plan.provider === 'asaas') {
-    const token = process.env.ASAAS_API_KEY
-    if (!token) return NextResponse.json({ error: 'O pagamento da assinatura ainda não está configurado no provedor.' }, { status: 503 })
-    if (plan.price == null || Number(plan.price) <= 0) return NextResponse.json({ error: 'O plano não possui um preço válido.' }, { status: 400 })
-
-    const apiUrl = (process.env.ASAAS_API_URL || 'https://api.asaas.com/v3').replace(/\/$/, '')
-    const cycle = plan.interval === 'year' ? 'YEARLY' : 'MONTHLY'
-    const externalReference = `${user.id}:${plan.id}`
-    const response = await fetch(`${apiUrl}/checkouts`, {
-      method: 'POST',
-      headers: { access_token: token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        billingTypes: ['PIX', 'CREDIT_CARD'],
-        chargeTypes: ['RECURRENT'],
-        minutesToExpire: 60,
-        externalReference,
-        callback: {
-          successUrl: `${origin}/assinatura?status=success`,
-          cancelUrl: `${origin}/assinatura?status=canceled`,
-          expiredUrl: `${origin}/assinatura?status=expired`
-        },
-        items: [{
-          name: plan.name,
-          description: plan.description || `Assinatura ${plan.name}`,
-          quantity: 1,
-          value: Number(plan.price)
-        }],
-        subscription: {
-          cycle,
-          nextDueDate: new Date().toISOString().slice(0, 10)
-        }
-      })
-    })
-    const data = await response.json().catch(() => ({}))
-    if (!response.ok || !data?.id) {
-      console.error('Asaas subscription checkout failed', { status: response.status, data, planId: plan.id })
-      return NextResponse.json({ error: 'O provedor recusou a criação do checkout.' }, { status: 502 })
-    }
-
-    const checkoutId = String(data.id)
-    await supabase.from('payment_events').insert({
-      user_id: user.id,
-      plan_id: plan.id,
-      provider: 'asaas',
-      external_event_id: checkoutId,
-      event_type: 'checkout_created',
-      status: 'active',
-      payload: { checkout_id: checkoutId, external_reference: externalReference }
-    })
-
-    return NextResponse.json({ url: `https://asaas.com/checkoutSession/show?id=${encodeURIComponent(checkoutId)}` })
+  if (plan.provider !== 'asaas') {
+    return NextResponse.json({ error: 'O checkout deste plano ainda não está configurado no provedor de pagamento.' }, { status: 503 })
   }
 
-  if (plan.provider === 'mercadopago' && process.env.MERCADOPAGO_ACCESS_TOKEN && plan.external_plan_id) {
-    const response = await fetch('https://api.mercadopago.com/preapproval', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
+  const token = process.env.ASAAS_API_KEY
+  if (!token) return NextResponse.json({ error: 'O pagamento da assinatura ainda não está configurado no provedor.' }, { status: 503 })
+  if (plan.price == null || Number(plan.price) <= 0) return NextResponse.json({ error: 'O plano não possui um preço válido.' }, { status: 400 })
+
+  const apiUrl = (process.env.ASAAS_API_URL || 'https://api.asaas.com/v3').replace(/\/$/, '')
+  const cycle = plan.interval === 'year' ? 'YEARLY' : 'MONTHLY'
+  const externalReference = `${user.id}:${plan.id}`
+  const response = await fetch(`${apiUrl}/checkouts`, {
+    method: 'POST',
+    headers: { access_token: token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      billingTypes: ['PIX', 'CREDIT_CARD'],
+      chargeTypes: ['RECURRENT'],
+      minutesToExpire: 60,
+      externalReference,
+      callback: {
+        successUrl: `${origin}/assinatura?status=success`,
+        cancelUrl: `${origin}/assinatura?status=canceled`,
+        expiredUrl: `${origin}/assinatura?status=expired`
       },
-      body: JSON.stringify({
-        preapproval_plan_id: plan.external_plan_id,
-        reason: plan.name,
-        payer_email: user.email,
-        external_reference: `${user.id}:${plan.id}`,
-        back_url: `${origin}/assinatura?status=success`
-      })
+      items: [{
+        name: plan.name,
+        description: plan.description || `Assinatura ${plan.name}`,
+        quantity: 1,
+        value: Number(plan.price)
+      }],
+      subscription: {
+        cycle,
+        nextDueDate: new Date().toISOString().slice(0, 10)
+      }
     })
-    const data = await response.json().catch(() => ({}))
-    if (!response.ok) return NextResponse.json({ error: 'O provedor recusou a criação do checkout.' }, { status: 502 })
-    await supabase.from('payment_events').insert({ user_id: user.id, plan_id: plan.id, provider: 'mercadopago', external_event_id: data.id || null, event_type: 'checkout_created', status: data.status || null, payload: { reference: `${user.id}:${plan.id}` } })
-    return NextResponse.json({ url: data.init_point || data.sandbox_init_point || null })
+  })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok || !data?.id) {
+    console.error('Asaas subscription checkout failed', { status: response.status, data, planId: plan.id })
+    return NextResponse.json({ error: 'O provedor recusou a criação do checkout.' }, { status: 502 })
   }
 
-  return NextResponse.json({ error: 'O checkout deste plano ainda não está configurado no provedor de pagamento.' }, { status: 503 })
+  const checkoutId = String(data.id)
+  await supabase.from('payment_events').insert({
+    user_id: user.id,
+    plan_id: plan.id,
+    provider: 'asaas',
+    external_event_id: checkoutId,
+    event_type: 'checkout_created',
+    status: 'active',
+    payload: { checkout_id: checkoutId, external_reference: externalReference }
+  })
+
+  return NextResponse.json({ url: `https://asaas.com/checkoutSession/show?id=${encodeURIComponent(checkoutId)}` })
 }
