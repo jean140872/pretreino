@@ -23,7 +23,7 @@ export default function AdminLoginPage() {
       setLoading(false)
       return
     }
-    const { data: isAdmin, error: roleError } = await supabase.rpc('is_admin', { p_user_id: data.user.id })
+    const { data: isAdmin, error: roleError } = await supabase.rpc('is_admin')
     if (roleError || !isAdmin) {
       await supabase.auth.signOut()
       setError('Esta conta não possui acesso ao Centro de Comando.')
